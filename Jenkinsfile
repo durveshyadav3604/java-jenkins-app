@@ -1,9 +1,13 @@
 pipeline {
  agent any
-tools {
+
+ 
+  tools {
         maven 'maven-3.9.12'
     }
+
 stages{
+
   
    stage("checkout"){
      steps {
@@ -13,6 +17,17 @@ stages{
            """
       }
    } 
+
+   stage("Check Tools") {
+            steps {
+                sh '''
+                  echo "PATH = $PATH"
+                  which mvn
+                  mvn --version
+                  java -version
+                '''
+            }
+        }
        
     stage("Building the application"){
      steps {
