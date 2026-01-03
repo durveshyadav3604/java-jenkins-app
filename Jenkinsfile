@@ -1,29 +1,40 @@
 pipeline {
-    agent any
+ agent any
 
-    tools {
-        maven 'maven-3.9.12'
-        jdk 'jdk-21'
-    }
+stages{
 
-    stages {
+  
+   stage("checkout"){
+     steps {
+           sh """
+           echo "Checkout done - $PWD"
+           ls -l
+           """
+      }
+   } 
 
-        stage("Check Tools") {
+   stage("Check Tools") {
             steps {
                 sh '''
-                  echo "JAVA HOME = $JAVA_HOME"
+                  echo "PATH = $PATH"
+                  which mvn
+                  mvn --version
                   java -version
-                  mvn -version
                 '''
             }
         }
+       
+    stage("Building the application"){
+     steps {
+         sh """
+           echo "========Building Java Application============"
+           mvn clean package
+           echo "======Building Java Application completed====="
+         """      
+      }
+    }            
 
-        stage("Build Application") {
-            steps {
-                sh '''
-                  mvn clean package
-                '''
-            }
-        }
-    }
-}
+
+} // end of stages
+
+} // end of pipeline
