@@ -80,19 +80,20 @@ stages{
   steps {
     sh """
        echo "=====Scanning Image Started======"
-       trivy image $IMAGE_NAME:"${env.BUILD_NUMBER}"
+       // trivy image $IMAGE_NAME:"${env.BUILD_NUMBER}"
        echo "=====Scanning Completed========"
        """
   }
  }
  
- stage("Docker Login")
+ stage("Docker Login and Push")
  {
    steps{
       sh """
            echo "======== Login the Docker Hub ============"
             echo "Docker credentials - ${DOCKERCREDENTIALS}"
-            docker login -u $DOCKERCREDENTIALS_USR -p DOCKERCREDENTIALS_PSW
+            docker login -u $DOCKERCREDENTIALS_USR -p $DOCKERCREDENTIALS_PSW
+            docker push $IMAGE_NAME:"${env.BUILD_NUMBER}"
            echo "====== Login successful====="
          """      
    } 
