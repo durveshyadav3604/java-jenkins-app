@@ -92,7 +92,7 @@ stages{
       sh """
            echo "======== Login the Docker Hub ============"
             echo "Docker credentials - ${DOCKERCREDENTIALS}"
-            docker login -u $DOCKERCREDENTIALS_USR --password DOCKERCREDENTIALS_PSW
+            docker login -u $DOCKERCREDENTIALS_USR -p DOCKERCREDENTIALS_PSW
            echo "====== Login successful====="
          """      
    } 
