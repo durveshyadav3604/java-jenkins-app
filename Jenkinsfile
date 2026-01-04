@@ -80,7 +80,7 @@ stages{
   steps {
     sh """
        echo "=====Scanning Image Started======"
-       // trivy image $IMAGE_NAME:"${env.BUILD_NUMBER}"
+       trivy image $IMAGE_NAME:"${env.BUILD_NUMBER}"
        echo "=====Scanning Completed========"
        """
   }
