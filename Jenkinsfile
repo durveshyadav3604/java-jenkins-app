@@ -4,6 +4,7 @@ pipeline {
  environment {
         IMAGE_NAME = 'durveshy27/springrestxapi'
         PORT_MAPPING = '8081:7000'  // hostPort:containerPort
+        DOCKERCREDENTIALS = credentials('docker-token')
     }
 
  
@@ -13,7 +14,7 @@ pipeline {
 
   parameters {
    string(name: 'DEPLOY_ENV', defaultValue: 'development', description: 'Select the target environment')
-   string(name: 'APP_VERSION', description: 'Provide tag for the docker image')
+   // string(name: 'APP_VERSION', description: 'Provide tag for the docker image')
 }
 
 stages{
@@ -75,7 +76,26 @@ stages{
          """      
    } 
  }
-
+ stage("Scan the Image"){
+  steps {
+    sh """
+       echo "=====Scanning Image Started======"
+       trivy image $IMAGE_NAME:"${env.BUILD_NUMBER}"
+       echo "=====Scanning Completed========"
+       """
+  }
+ }
+ 
+ stage("Docker Login")
+ {
+   steps{
+      sh """
+           echo "======== Login the Docker Hub ============"
+            echo "Docker credentials - ${DOCKERCREDENTIALS}"
+           echo "====== Login successful====="
+         """      
+   } 
+ }
 
 } // end of stages
 
