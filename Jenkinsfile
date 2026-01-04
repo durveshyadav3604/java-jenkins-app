@@ -102,7 +102,7 @@ stages{
     steps {
         sh '''
           echo "======== Docker Image Prune Started ========"
-          docker image prune -f
+          docker image prune -af
           echo "======== Docker Image Prune Completed ========"
         '''
     }
