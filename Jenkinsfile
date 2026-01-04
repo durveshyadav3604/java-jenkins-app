@@ -98,6 +98,15 @@ stages{
          """      
    } 
  }
+ stage("Docker Image Prune") {
+    steps {
+        sh '''
+          echo "======== Docker Image Prune Started ========"
+          docker image prune -f
+          echo "======== Docker Image Prune Completed ========"
+        '''
+    }
+}
 
 } // end of stages
 
