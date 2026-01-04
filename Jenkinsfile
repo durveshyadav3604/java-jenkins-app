@@ -1,6 +1,10 @@
 pipeline {
  agent any
 
+  environment{
+     IMAGE_NAME = 'durveshy27/springrestapi'
+     PORT_MAPPING = '8081:7000'
+  } 
  
   tools {
         maven 'maven-3.9.12'
@@ -8,6 +12,7 @@ pipeline {
 
   parameters {
    string(name: 'DEPLOY_ENV', defaultValue: 'development', description: 'Select the target environment')
+   string(name: 'APP_VERSION', description: 'Provide tag for the docker image')
 }
 
 stages{
@@ -44,11 +49,29 @@ stages{
      steps {
          sh """
            echo "========Building Java Application============"
-           mvn clean package
+           mvn clean package package -B -DskikTests
            echo "======Building Java Application completed====="
          """      
       }
-    }            
+    }  
+    stage("Testing the application"){
+     steps {
+         sh 'echo "========Testing Java Application============"'
+         sh  '/opt/apache-maven-3.9.12/bin/mvn test'
+          sh 'echo "========Completed Tests============"'
+     }  
+   }
+   stage("Docker Image")
+   {
+    steps {
+    sh """
+           echo "========Building the Docker Image ============"
+            docker build -t $IMAGE_NAME:'$APP_VERSION' .
+           echo "====== Building Image Completed ====="
+         """      
+      }
+   }
+  
 
 
 } // end of stages
