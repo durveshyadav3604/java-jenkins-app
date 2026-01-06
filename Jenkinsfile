@@ -5,6 +5,7 @@ pipeline {
         IMAGE_NAME = 'durveshy27/springrestxapi'
         PORT_MAPPING = '8081:7000'  // hostPort:containerPort
         DOCKERCREDENTIALS = credentials('docker-token')
+        MINIKUBE_IP = '43.205.96.85'
     }
 
  
@@ -98,15 +99,22 @@ stages{
          """      
    } 
  }
- stage("Docker Image Prune") {
+ stage('Connect to EC2 & Deployon on Minikube ') {
     steps {
-        sh '''
-          echo "======== Docker Image Prune Started ========"
-          docker image prune -af
-          echo "======== Docker Image Prune Completed ========"
-        '''
+
+        withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'SSH_KEY')]) 
+     {
+
+            sh "ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ubuntu@$MINIKUBE_IP 'echo Connected to EC2'"
+
+            sh 'scp -i ${SSH_KEY} -o StrictHostKeyChecking=no deployment.yaml ubuntu@$MINIKUBE_IP:/home/ubuntu/'
+
+            sh 'ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ubuntu@$MINIKUBE_IP "kubectl delete -f /home/ubuntu/deployment.yaml --ignore-not-found=true"'
+
+            sh 'ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ubuntu@$MINIKUBE_IP "kubectl apply -f /home/ubuntu/deployment.yaml"'
+        }
     }
-}
+ }
 
 } // end of stages
 
