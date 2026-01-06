@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: restapi-deployment
+  name: springrestapi-deployment
 spec:
   replicas: 5
   selector:
@@ -14,14 +14,14 @@ spec:
     spec:
       containers:
       - name: restapi-container
-        image: durveshy27/restapi:latest
+        image: durveshy27/springrestxapi:30
         ports:
         - containerPort: 7000
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: restapi-service
+  name: springrestapi-service
 spec:
   type: NodePort
   selector:
