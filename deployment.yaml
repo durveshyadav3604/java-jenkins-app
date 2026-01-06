@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: restapi-container
-        image: priya123456/restapi:latest
+        image: durveshy27/restapi:latest
         ports:
         - containerPort: 7000
 ---
@@ -29,5 +29,5 @@ spec:
   ports:
   - port: 7000
     targetPort: 7000
-    nodePort: 30370
+    nodePort: 30372
     
