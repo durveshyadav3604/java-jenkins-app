@@ -8,7 +8,7 @@ pipeline {
     }
 
     tools {
-        maven 'maven-3.9.12'
+        maven 'maven-3.9.11'
     }
 
     parameters {
