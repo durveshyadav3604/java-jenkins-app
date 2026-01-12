@@ -1,121 +1,137 @@
 pipeline {
- agent any
+    agent any
 
- environment {
+    environment {
         IMAGE_NAME = 'durveshy27/springrestxapi'
-        PORT_MAPPING = '8081:7000'  // hostPort:containerPort
         DOCKERCREDENTIALS = credentials('docker-token')
-        MINIKUBE_IP = '43.205.96.85'
+        MINIKUBE_IP = '13.234.232.127'
     }
 
- 
-  tools {
+    tools {
         maven 'maven-3.9.12'
     }
 
-  parameters {
-   string(name: 'DEPLOY_ENV', defaultValue: 'development', description: 'Select the target environment')
-   // string(name: 'APP_VERSION', description: 'Provide tag for the docker image')
-}
+    parameters {
+        string(
+            name: 'DEPLOY_ENV',
+            defaultValue: 'development',
+            description: 'Select the target environment'
+        )
+    }
 
-stages{
+    stages {
 
-  
-   stage("checkout"){
-    when {
-                // Execute this stage if the ENVIRONMENT parameter is 'development'
-                expression { 
-                     return params.DEPLOY_ENV == 'development' 
-                }
-          }
-     steps {
-           sh """
-           echo "Checkout done - $PWD"
-           echo "DEPLOY_ENV value $DEPLOY_ENV"
-           ls -l
-           """
-      }
-   } 
-
-   stage("Check Tools") {
+        stage('Checkout') {
+            when {
+                expression { params.DEPLOY_ENV == 'development' }
+            }
             steps {
+                checkout scm
                 sh '''
-                  echo "PATH = $PATH"
-                  which mvn
-                  mvn --version
-                  java -version
+                    echo "Checkout completed"
+                    echo "DEPLOY_ENV = $DEPLOY_ENV"
+                    ls -l
                 '''
             }
         }
-       
-    stage("Building the application"){
-     steps {
-         sh """
-           echo "========Building Java Application============"
-           mvn clean package -B -DskipTests
-           echo "======Building Java Application completed====="
-         """      
-      }
-    }
 
-   stage("Testing the application"){
-     steps {
-         sh 'echo "========Testing Java Application============"'
-         sh  '/opt/apache-maven-3.9.12/bin/mvn test'
-          sh 'echo "========Completed Tests============"'
-     }  
-   }
+        stage('Check Tools') {
+            steps {
+                sh '''
+                    echo "PATH = $PATH"
+                    which mvn
+                    mvn --version
+                    java -version
+                '''
+            }
+        }
 
- stage("Docker Image")
- {
-   steps {
-          sh """
-           echo "========Building the Docker Image ============"
-           echo "IMAGE Name is - ${IMAGE_NAME}"
-           docker build -t ${IMAGE_NAME}:"${env.BUILD_NUMBER}" .
-           echo "====== Building Image Completed ====="
-         """      
-   } 
- }
- stage("Scan the Image"){
-  steps {
-    sh """
-       echo "=====Scanning Image Started======"
-       trivy image $IMAGE_NAME:"${env.BUILD_NUMBER}"
-       echo "=====Scanning Completed========"
-       """
-  }
- }
- 
- stage("Docker Login and Push")
- {
-   steps{
-      sh """
-           echo "======== Login the Docker Hub ============"
-            echo "Docker credentials - ${DOCKERCREDENTIALS}"
-            docker login -u $DOCKERCREDENTIALS_USR -p $DOCKERCREDENTIALS_PSW
-            docker push $IMAGE_NAME:"${env.BUILD_NUMBER}"
-           echo "====== Login successful====="
-         """      
-   } 
- }
- stage('Connect to EC2 & Deployon on Minikube ') {
-    steps {
+        stage('Build Application') {
+            steps {
+                sh '''
+                    echo "===== Building Java Application ====="
+                    mvn clean package -B -DskipTests
+                    echo "===== Build Completed ====="
+                '''
+            }
+        }
 
-        withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'SSH_KEY')]) 
-     {
+        stage('Test Application (JUnit)') {
+            steps {
+                sh '''
+                    echo "===== Running JUnit Tests ====="
+                    mvn test
+                '''
+            }
+            post {
+                always {
+                    echo "Publishing JUnit Test Results"
+                    junit '**/target/surefire-reports/*.xml'
+                }
+            }
+        }
 
-            sh "ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ubuntu@$MINIKUBE_IP 'echo Connected to EC2'"
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                    echo "===== Building Docker Image ====="
+                    docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} .
+                '''
+            }
+        }
 
-            sh 'scp -i ${SSH_KEY} -o StrictHostKeyChecking=no deployment.yaml ubuntu@$MINIKUBE_IP:/home/ubuntu/'
+        stage('Scan Docker Image (Trivy)') {
+            steps {
+                sh '''
+                    echo "===== Trivy Scan Started ====="
+                    trivy image ${IMAGE_NAME}:${BUILD_NUMBER}
+                    echo "===== Trivy Scan Completed ====="
+                '''
+            }
+        }
 
-            sh 'ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ubuntu@$MINIKUBE_IP "kubectl delete -f /home/ubuntu/deployment.yaml --ignore-not-found=true"'
+        stage('Docker Login & Push') {
+            steps {
+                sh '''
+                    echo "===== Logging into Docker Hub ====="
+                    docker login -u $DOCKERCREDENTIALS_USR -p $DOCKERCREDENTIALS_PSW
+                    docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+                '''
+            }
+        }
 
-            sh 'ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ubuntu@$MINIKUBE_IP "kubectl apply -f /home/ubuntu/deployment.yaml"'
+        stage('Deploy to AWS EC2 (Minikube)') {
+            steps {
+                withCredentials([
+                    sshUserPrivateKey(
+                        credentialsId: 'ec2-ssh-key',
+                        keyFileVariable: 'SSH_KEY'
+                    )
+                ]) {
+                    sh '''
+                        echo "Connecting to EC2"
+                        ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@$MINIKUBE_IP "echo Connected"
+
+                        echo "Copying deployment.yaml"
+                        scp -i $SSH_KEY -o StrictHostKeyChecking=no deployment.yaml ubuntu@$MINIKUBE_IP:/home/ubuntu/
+
+                        echo "Deploying to Kubernetes"
+                        ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@$MINIKUBE_IP "
+                            kubectl delete -f /home/ubuntu/deployment.yaml --ignore-not-found=true &&
+                            kubectl apply -f /home/ubuntu/deployment.yaml
+                        "
+                    '''
+                }
+            }
         }
     }
- }
 
-} // end of stages
-
-} // end of pipeline
+    post {
+        success {
+            echo "✅ Pipeline completed successfully"
+        }
+        failure {
+            echo "❌ Pipeline failed"
+        }
+    }
+}
