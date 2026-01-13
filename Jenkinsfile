@@ -104,7 +104,7 @@ pipeline {
             steps {
                 withCredentials([
                     sshUserPrivateKey(
-                        credentialsId: 'ubuntu',
+                        credentialsId: 'ec2-ssh-key',
                         keyFileVariable: 'SSH_KEY'
                     )
                 ]) {
