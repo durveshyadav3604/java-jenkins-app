@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = 'durveshy27/springrestxapi'
-        DOCKERCREDENTIALS = credentials('docker-token')
+        DOCKERCREDENTIALS = credentials('docker-hub-token1')
         MINIKUBE_IP = '13.234.232.127'
     }
 
