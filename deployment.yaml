@@ -14,7 +14,8 @@ spec:
     spec:
       containers:
       - name: restapi-container
-        image: durveshy27/springrestxapi:30
+        image: durveshy27/springrestxapi:${BUILD_NUMBER}
+        imagePullPolicy: Always
         ports:
         - containerPort: 7000
 ---
