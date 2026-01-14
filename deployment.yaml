@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: restapi-container
-        image: durveshy27/springrestxapi:latest
+        image: durveshy27/springrestxapi:35
         imagePullPolicy: Always
         ports:
         - containerPort: 7000
