@@ -4,11 +4,11 @@ pipeline {
     environment {
         IMAGE_NAME = 'durveshy27/springrestxapi'
         DOCKERCREDENTIALS = credentials('docker-hub-token1')
-        MINIKUBE_IP = '13.234.34.6'
+        MINIKUBE_IP = '35.154.239.2'
     }
 
     tools {
-        maven 'Maven-3.8.7'
+        maven 'Maven-3.9.12'
     }
 
     parameters {
